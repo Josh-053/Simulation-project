@@ -12,7 +12,13 @@ abstract: >
 ---
 {{< pagebreak >}}
 
-# Context
+# Introduction
+
+Brontogen fibropathy (BF) is an inherited disorder that leads to changes in lung tissue and airflow over time. Patients with BF develop infection from Spirgilus viridicaulis, a fungal species that grows in warm and humid regions. This fungus can be treated using the antimycotic drug triazoconazole. This drug is administered to children with BF for off-label use, as it is originally indicated for patients with bronchiectasis.
+
+# Objectives
+
+The purpose of the simulation is to find an optimal exposure-response relationship for children with Brontogen fibropathy. 
 
 # Packages
 
@@ -46,7 +52,7 @@ pacman::p_load(mrgsolve,
 ```{cpp}
 $PARAM
 TVCL   = 7.95,  // L/h
-TVV   = 190,    // L 
+TVV    = 190 ,  // L 
 TVka   = 0.17,  // 1/h
 
 $CMT DEPOT CENT // 1-compartmental model with absorption
@@ -54,14 +60,14 @@ $CMT DEPOT CENT // 1-compartmental model with absorption
 $INPUT BW = 38  // kg, covariate which has effect on PK parameters
 
 $MAIN
-double BWEffCL = 0.75    // BW effect on CL
-double BWEffV  = 1       // BW effect on V
-double BWEffka = -(0.25) // BW effect on ka
+double BWEffCL = 0.75    ; // BW effect on CL
+double BWEffV  = 1       ; // BW effect on V
+double BWEffka = -(0.25) ; // BW effect on ka
 
-double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1));
-// pow(): power function for scaling
+double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1)); // power function for scaling
 double V   = TVV  * pow((BW/70),BWEffV)               ;
 double ka  = TVka * pow((BW/70),BWEffka)              ;
+
 double k10 = CL/V ; 
 
 $OMEGA
@@ -83,6 +89,29 @@ double BWsim = BW                            ;
 $CAPTURE
 IPRED DV BWsim
 ```
+
+
+```{r}
+#| echo: false
+mod <- mread("project")
+```
+
+```{r}
+#| echo: false
+mod %>%
+  ev(amt = 150) %>% 
+  mrgsim() %>% 
+  plot()
+```
+
+```{r}
+#| echo: false
+mod %>%
+  ev(amt = 250) %>% 
+  mrgsim() %>% 
+  plot()
+```
+
 
 # Results and Discussion
 
