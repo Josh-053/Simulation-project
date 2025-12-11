@@ -1,0 +1,46 @@
+$PARAM
+TVCL   = 7.95;    // L/h
+TVVc   = 190;   // L 
+TVka   = 0.17;  // L/h
+
+$CMT  DEPOT CENT
+
+$INPUT 
+BW   = 38; // Kg  
+
+$MAIN
+// Fixed covariate exponents from model
+double BWEffCL    = 0.92 ; 
+double BWEffVc    = 1;		
+double BWEffKa    = -0.25;
+
+//Calculate individual parameters with covariate scaling and IIV on CL
+
+double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1)); // L/h
+double Vc  = TVVc * pow((BW/70),BWEffVc);  // L
+double ka  = TVka * pow((BW/70),BWEffKa); // h-1
+
+double k10 = CL/Vc; 
+
+$OMEGA @block
+0.1415  // CV_CL = 39%
+
+$SIGMA  
+0.1024     // Var (EPS1) = (0.32)^2 proportional component  
+0.0324    //  Var (EPS2) = (0.18)^2 additive component
+
+$ODE
+dxdt_DEPOT  = -(ka) * DEPOT ;
+dxdt_CENT   =  (ka) * DEPOT - (CL/Vc) * CENT ;
+
+$TABLE 
+//Calculate model predictions and apply residual error
+double C       = CENT/V; // Predicted concentration
+double IPRED   = C;      // Individual prediction without error
+double DV      = IPRED * (1+EPS(1)) + EPS(2); // Obs DV with combined error
+
+
+$CAPTURE IPRED DV C CL Vc Ka BW
+
+
+
