@@ -1,0 +1,32 @@
+From: Sarojini Tagore
+Sent: Thursday, November 13, 2025 9:07 PM
+To: Joshua Ijidakinro <joshua.ijidakinro@student.uclouvain.be>; Ali Kazim <ali.kazim@student.uclouvain.be>; Walid Koutti <walid.koutti@student.uclouvain.be>; Ante Kuvacic <ante.kuva@student.uclouvain.be>; Kevin Mike Ndjafang Jatsa <kevin.ndjafang@student.uclouvain.be>
+  Subject: Collaboration Request: PopPK-Based Dosing Optimization for Triazoconazole
+_______________________________________________________________________
+
+Dear students,
+
+I hope this message finds you well.
+
+I am Sarojini Tagore, a pediatrician at Gavabhata Hospital and Research Centre in Amumbi, South Asia.
+
+A couple of months ago, I discovered that some of my patients with Brontogen Fibropathy (BF), an inherited disorder leading to progressive changes in lung tissue and airflow, were infected by Spirgilus viridicaulis, with a prevalence of about 37%. Although I could not explain the exact reason for this new infection, I suspect that Amumbi’s increasingly warm and humid monsoon seasons may have favored the growth of this emerging fungal species. I immediately contacted my colleague Dr. Lydia Majorana from Sicilia, who has great experience with BF.
+
+Even though Spirgilus viridicaulis has never been identified in children with BF, we decided to treat the patients with 150 mg of triazoconazole (off-label) following the regimen used in the bronchiectasis population. In that population, chronic colonization by the fungus has been shown to accelerate the decline in respiratory function. Patients with bronchiectasis usually take once daily 150 mg (one 100-mg tablet plus half a tablet) of triazoconazole to reduce the fungal load, which ensures the attainment of the TDM target (AUC0-24h of 28 mg·h/L) with a probability of 95%. Triazoconazole’s broad therapeutic window—without a confirmed exposure level associated with toxicity—permits dose increases for patients who do not reach the TDM target.
+
+Over the past weeks, I have carefully followed my patients affected by Spirgilus viridicaulis by collecting blood samples and monitoring clinical parameters. I observed that, for some of them,  the S. viridicaulis load remained relatively high. Given the off-label nature of this treatment, one of my concerns is whether the dose I’m providing is appropriate. For that reason, I recently collaborated with the pharmacometrician Dr. Ramesh Thapali —an old friend of mine— and together we used the collected data to develop a popPK model (see appended supplementary data) describing and predicting the relationship between triazoconazole dosing and exposure in BF children from Amumbi.
+
+Unfortunately, due to his ongoing duties at Metrum Research Group, Dr. Ramesh Thapali was unable to assist further with applying the model. Before leaving Amumbi for Tariffville, he mentioned he’d heard rumours about highly motivated pharmacometrics students in Leuven, ready to tackle any dosing challenge.
+
+That is why I am reaching out to you. I would be deeply grateful if you could help me to optimize the dosing of triazoconazole in children with Brontogen Fibropathy infected by Spirgilus viridicaulis. Any insight or suggestion from your expertise would be invaluable.
+
+Thank you very much for your time, consideration, and please do not hesitate to reach out if you have any question!
+
+
+With warm regards,
+
+Dr. Sarojini Tagore
+Pediatrician, Department of Pediatrics
+Gavabhata Hospital and Research Centre
+Amumbi, South Asia
+
