@@ -8,9 +8,9 @@ $CMT DEPOT CENT // 1-compartmental model with absorption
 $INPUT BW = 38 // kg, covariate which has effect on PK parameters
 
 $MAIN
-double BWEffCL = 0.75    // BW effect on CL
-double BWEffV  = 1       // BW effect on V
-double BWEffka = -(0.25) // BW effect on ka
+double BWEffCL = 0.75    ; // BW effect on CL
+double BWEffV  = 1       ; // BW effect on V
+double BWEffka = -(0.25) ; // BW effect on ka
 
 double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1)); // power function for scaling
 double V   = TVV  * pow((BW/70),BWEffV)               ;
