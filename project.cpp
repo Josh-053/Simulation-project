@@ -1,9 +1,9 @@
 $PARAM
-TVCL   = 7.95,    // L/h
+TVCL   = 7.95,  // L/h
 TVV    = 190,   // L 
 TVka   = 0.17,  // 1/h
 
-$CMT DEPOT CENT // 1-compartmental model with absorption
+$CMT DEPOT CENT cAUC // 1-compartmental model with absorption
 
 $INPUT BW = 38 // kg, covariate which has effect on PK parameters
 
@@ -28,11 +28,12 @@ $SIGMA
 $ODE
 dxdt_DEPOT   = -(ka) * DEPOT                 ;
 dxdt_CENT    =  (ka) * DEPOT  - (k10) * CENT ;
+dxdt_cAUC    =                  CENT/V       ;
 
 $TABLE 
-double IPRED = CENT/V                        ; 
-double DV    = IPRED * (1+EPS(1)) + EPS(2)   ;
-double BWsim = BW                            ;
+double IPRED  = CENT/V                        ; 
+double DV     = IPRED * (1+EPS(1)) + EPS(2)   ;
+double BWsim  = BW                            ;
 
 $CAPTURE
-IPRED DV BWsim
+IPRED

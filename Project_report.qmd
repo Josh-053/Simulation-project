@@ -45,19 +45,19 @@ pacman::p_load(mrgsolve,
                patchwork)
 ```
 
-{{< pagebreak >}}
+{{< pagebreak >}} 
 
 # Simulation Code
 
 ```{cpp}
 $PARAM
 TVCL   = 7.95,  // L/h
-TVV    = 190 ,  // L 
+TVV    = 190,   // L 
 TVka   = 0.17,  // 1/h
 
-$CMT DEPOT CENT // 1-compartmental model with absorption
+$CMT DEPOT CENT cAUC // 1-compartmental model with absorption
 
-$INPUT BW = 38  // kg, covariate which has effect on PK parameters
+$INPUT BW = 38 // kg, covariate which has effect on PK parameters
 
 $MAIN
 double BWEffCL = 0.75    ; // BW effect on CL
@@ -80,14 +80,15 @@ $SIGMA
 $ODE
 dxdt_DEPOT   = -(ka) * DEPOT                 ;
 dxdt_CENT    =  (ka) * DEPOT  - (k10) * CENT ;
+dxdt_cAUC    =                  CENT/V       ;
 
 $TABLE 
-double IPRED = CENT/V                        ; 
-double DV    = IPRED * (1+EPS(1)) + EPS(2)   ;
-double BWsim = BW                            ;
+double IPRED  = CENT/V                        ; 
+double DV     = IPRED * (1+EPS(1)) + EPS(2)   ;
+double BWsim  = BW                            ;
 
 $CAPTURE
-IPRED DV BWsim
+IPRED
 ```
 
 
@@ -96,22 +97,101 @@ IPRED DV BWsim
 mod <- mread("project")
 ```
 
-```{r}
-#| echo: false
-mod %>%
-  ev(amt = 150) %>% 
-  mrgsim() %>% 
-  plot()
+```{r parameters}
+set.seed(123)      # reproducibility
+
+N      <- 1000L    # number of replicates
+N_id   <- 33L      # number of patients per replicate
+delta  <- 0.1      # hours (h)
+tot_id <- N * N_id
 ```
 
 ```{r}
 #| echo: false
-mod %>%
-  ev(amt = 250) %>% 
-  mrgsim() %>% 
-  plot()
+ev1 <- ev(amt = 150, time = 0)
+ev2 <- ev(amt = 150, time = 0, ii = 12, addl = 1)
+ev3 <- ev(amt = 150, time = 0, ii = 8,  addl = 2)
+ev4 <- ev(amt = 200, time = 0)
+ev5 <- ev(amt = 240, time = 0)
+ev6 <- ev(amt = 300, time = 0)
+
+# Force a grid that includes 24 exactly
+tg <- tgrid(start = 0, end = 24, delta = delta)
+
+
+run_regimen <- function(ev_obj, label) {
+  out <- mrgsim(mod %>% init(cAUC = 0),
+                e      = ev_obj,
+                nid    = tot_id,
+                tgrid  = tg,
+                output = "df")
+  
+  rows24  <- out$time == 24
+  auc_vec <- out$cAUC[rows24]
+ 
+   # Robustness check: should have one AUC per ID
+  stopifnot(length(auc_vec) == tot_id)
+  
+  list(sim = transform(out, regimen = label),
+       auc = data.frame(regimen = label, AUC_0_24 = auc_vec))
+}
 ```
 
+```{r}
+res_24_150 <- run_regimen(ev1, "150 mg q24h")
+res_12_150 <- run_regimen(ev2, "150 mg q12h")
+res_08_150 <- run_regimen(ev3, "150 mg q8h")
+res_24_200 <- run_regimen(ev4, "200 mg q24h")
+res_24_240 <- run_regimen(ev5, "240 mg q24h")
+res_24_300 <- run_regimen(ev6, "300 mg q24h")
+
+sim_all <- bind_rows(res_24_150$sim, res_12_150$sim, res_08_150$sim,
+                     res_24_200$sim, res_24_240$sim, res_24_300$sim)
+auc_all <- bind_rows(res_24_150$auc, res_12_150$auc, res_08_150$auc,
+                     res_24_200$auc, res_24_240$auc, res_24_300$auc)
+```
+
+```{r}
+auc_summary <- auc_all %>%
+  group_by(regimen) %>%
+  summarize(median_AUC_0_24 = median(AUC_0_24),
+            mean_AUC_0_24   = mean(AUC_0_24),
+            sd_AUC_0_24     = sd(AUC_0_24),
+            .groups = "drop")
+
+print(auc_summary)
+```
+
+
+```{r}
+ipred_summary<- sim_all %>%
+  group_by(regimen, time) %>%
+  summarize(IPRED_median = median(IPRED),
+            IPRED_lo     = quantile(IPRED, 0.025),
+            IPRED_hi     = quantile(IPRED, 0.975),
+            .groups = "drop")
+
+ggplot(ipred_summary,
+       aes(x = time,
+           color = regimen)) +
+  geom_ribbon(aes(ymin = IPRED_lo,
+                  ymax = IPRED_hi,
+                  fill = regimen),
+              alpha = 0.15,
+              color = NA)+
+  geom_line(aes(y = IPRED_median),
+            linewidth = 1) +
+  scale_color_manual(values = c("red", "darkorange", "gold",
+                                "forestgreen", "blue", "purple")) +
+  scale_fill_manual(values =  c("red", "darkorange", "gold",
+                                "forestgreen", "blue", "purple")) +
+  labs(
+    title = "Regimen comparison: IPRED median profiles",
+    x = "Time (h)",
+    y = "Concentration (IPRED)",
+    color = "Regimen") +
+  theme_minimal()
+```
 
 # Results and Discussion
 
