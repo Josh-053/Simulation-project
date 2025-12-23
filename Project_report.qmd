@@ -7,33 +7,23 @@ execute:
   echo: true
   warning: false
   message: false
-abstract: >
-  The characteristic theme of the works of Stone is the bridge between culture and society. ...
 ---
-{{< pagebreak >}}
 
 # Introduction
 
-Brontogen fibropathy (BF) is an inherited disorder that leads to changes in lung tissue and airflow over time. Patients with BF develop infection from Spirgilus viridicaulis, a fungal species that grows in warm and humid regions. This fungus can be treated using the antimycotic drug triazoconazole. This drug is administered to children with BF for off-label use, as it is originally indicated for patients with bronchiectasis.
+Brontogen fibropathy (BF) is an inherited disorder that leads to changes in lung tissue and airflow over time. Patients with BF develop infection from *Spirgilus viridicaulis*, a fungal species that grows in warm and humid regions. This fungus can be treated using the antimycotic drug triazoconazole. This drug is administered to children with BF for off-label use, as it is originally indicated for patients with bronchiectasis.
 
 # Objectives
 
-The purpose of the simulation is to find an optimal exposure-response relationship for children with Brontogen fibropathy. 
+The purpose of the simulation was to evaluate whether the administered dose of 150 mg once a day evoked sufficient exposure with area under the curve from time zero to 24 hours (AUC~0-24~) of 28 mg·h/L for children with Brontogen fibropathy. The goal was also to suggest an optimal dosing regimen based on the simulation results.
 
-# Packages
+# Methods
 
-The script below shows the packages which were loaded during the report generation. The packages used in this report were:
+A study of 33 adolescent patients was simulated over 1000 replicates, resulting in a total of 33000 simulated patients. The simulation was performed using `mrgsolve` package in `R`. A dosing event was created for the administered regimen of **150 mg q24h**, which was used to simulate the individual predicted plasms concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the **continuous AUC integration** method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **150 mg q8h, 150 mg q12h, 200 mg q24h, 240 mg q24h and 300 mg q24h**. Higher doses were selected based on the assumption of dose proportionality []. The next page shows the simulation model script.
 
--   `mrgsolve`: For performing simulations using models based on ordinary differential equations (ODEs);
-
--   `ggplot2`: For creating graphics using data frames;
-
--   `tidyverse`: For data formatting;
-
--   `patchwork`: For combining several elements, such as plots, into one element.
 
 ```{r packages}
-#| echo: true
+#| include: false
 
 if (!require("pacman")) {
   install.packages("pacman")
@@ -41,13 +31,14 @@ if (!require("pacman")) {
 
 pacman::p_load(mrgsolve,
                ggplot2,
+               kableExtra,
                tidyverse,
                patchwork)
 ```
 
 {{< pagebreak >}} 
 
-# Simulation Code
+## Simulation Code
 
 ```{cpp}
 $PARAM
@@ -64,9 +55,10 @@ double BWEffCL = 0.75    ; // BW effect on CL
 double BWEffV  = 1       ; // BW effect on V
 double BWEffka = -(0.25) ; // BW effect on ka
 
-double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1)); // power function for scaling
+double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1));
 double V   = TVV  * pow((BW/70),BWEffV)               ;
 double ka  = TVka * pow((BW/70),BWEffka)              ;
+// power function for scaling
 
 double k10 = CL/V ; 
 
@@ -91,6 +83,7 @@ $CAPTURE
 IPRED
 ```
 
+# Results
 
 ```{r}
 #| echo: false
@@ -98,6 +91,7 @@ mod <- mread("project")
 ```
 
 ```{r parameters}
+#| echo: false
 set.seed(123)      # reproducibility
 
 N      <- 1000L    # number of replicates
@@ -138,6 +132,7 @@ run_regimen <- function(ev_obj, label) {
 ```
 
 ```{r}
+#| echo: false
 res_24_150 <- run_regimen(ev1, "150 mg q24h")
 res_12_150 <- run_regimen(ev2, "150 mg q12h")
 res_08_150 <- run_regimen(ev3, "150 mg q8h")
@@ -151,7 +146,10 @@ auc_all <- bind_rows(res_24_150$auc, res_12_150$auc, res_08_150$auc,
                      res_24_200$auc, res_24_240$auc, res_24_300$auc)
 ```
 
+The study suggests that the dosing regimen of **150 mg q24h** elicits an AUC~0-24~ of 17.69 mg·h/L, which is below the anticipated exposure of 28 mg·h/L. Based on these results, dosing regimens (**150 mg q8h, 240 mg q24h or 300 mg q24h**) are proposed.
+
 ```{r}
+#| echo: false
 auc_summary <- auc_all %>%
   group_by(regimen) %>%
   summarize(median_AUC_0_24 = median(AUC_0_24),
@@ -159,11 +157,21 @@ auc_summary <- auc_all %>%
             sd_AUC_0_24     = sd(AUC_0_24),
             .groups = "drop")
 
-print(auc_summary)
+auc_summary %>%
+  kable(
+    format   = "latex", # PDF/LaTeX output
+    booktabs = TRUE,    # nicer horizontal rules
+    digits   = 2,       # numeric rounding
+    caption  = "AUC (0–24 h) Summary by Regimen",
+    col.names = c("Regimen", "Median", "Mean", "SD"),
+    align    = c("l", "r", "r", "r"),
+    longtable = TRUE
+  )
 ```
 
 
 ```{r}
+#| echo: false
 ipred_summary<- sim_all %>%
   group_by(regimen, time) %>%
   summarize(IPRED_median = median(IPRED),
@@ -185,14 +193,14 @@ ggplot(ipred_summary,
                                 "forestgreen", "blue", "purple")) +
   scale_fill_manual(values =  c("red", "darkorange", "gold",
                                 "forestgreen", "blue", "purple")) +
+  guides(fill="none") +
   labs(
     title = "Regimen comparison: IPRED median profiles",
     x = "Time (h)",
     y = "Concentration (IPRED)",
     color = "Regimen") +
-  theme_minimal()
+  theme_minimal() 
 ```
 
-# Results and Discussion
-
 # Conclusion
+
