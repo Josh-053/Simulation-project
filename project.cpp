@@ -36,4 +36,4 @@ double DV     = IPRED * (1+EPS(1)) + EPS(2)   ;
 double BWsim  = BW                            ;
 
 $CAPTURE
-IPRED
+IPRED DV

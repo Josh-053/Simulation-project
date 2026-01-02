@@ -19,7 +19,7 @@ The purpose of the simulation was to evaluate whether the administered dose of 1
 
 # Methods
 
-A study of 33 adolescent patients was simulated over 1000 replicates, resulting in a total of 33000 simulated patients. The simulation was performed using `mrgsolve` package in `R`. A dosing event was created for the administered regimen of **150 mg q24h**, which was used to simulate the individual predicted plasms concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the **continuous AUC integration** method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **150 mg q8h, 150 mg q12h, 200 mg q24h, 240 mg q24h and 300 mg q24h**. Higher doses were selected based on the assumption of dose proportionality []. The next page shows the simulation model script.
+A study of 33 adolescent patients was simulated over 100 replicates, resulting in a total of 3300 simulated patients. The simulation was performed using `mrgsolve` package in `R`. A dosing event was created for the administered regimen of **150 mg q24h**, which was used to simulate the individual predicted plasms concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the **continuous AUC integration** method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **150 mg q8h, 150 mg q12h, 200 mg q24h, 240 mg q24h and 300 mg q24h**. Higher doses were selected based on the assumption of dose proportionality []. The next page shows the simulation model script.
 
 
 ```{r packages}
@@ -33,7 +33,9 @@ pacman::p_load(mrgsolve,
                ggplot2,
                kableExtra,
                tidyverse,
-               patchwork)
+               patchwork,
+               xpose,
+               vpc)
 ```
 
 {{< pagebreak >}} 
@@ -80,7 +82,7 @@ double DV     = IPRED * (1+EPS(1)) + EPS(2)   ;
 double BWsim  = BW                            ;
 
 $CAPTURE
-IPRED
+IPRED DV
 ```
 
 # Results
@@ -94,7 +96,7 @@ mod <- mread("project")
 #| echo: false
 set.seed(123)      # reproducibility
 
-N      <- 1000L    # number of replicates
+N      <- 100L     # number of replicates
 N_id   <- 33L      # number of patients per replicate
 delta  <- 0.1      # hours (h)
 tot_id <- N * N_id
@@ -123,7 +125,7 @@ run_regimen <- function(ev_obj, label) {
   rows24  <- out$time == 24
   auc_vec <- out$cAUC[rows24]
  
-   # Robustness check: should have one AUC per ID
+  # Robustness check: should have one AUC per ID
   stopifnot(length(auc_vec) == tot_id)
   
   list(sim = transform(out, regimen = label),
@@ -146,7 +148,7 @@ auc_all <- bind_rows(res_24_150$auc, res_12_150$auc, res_08_150$auc,
                      res_24_200$auc, res_24_240$auc, res_24_300$auc)
 ```
 
-The study suggests that the dosing regimen of **150 mg q24h** elicits an AUC~0-24~ of 17.69 mg·h/L, which is below the anticipated exposure of 28 mg·h/L. Based on these results, dosing regimens (**150 mg q8h, 240 mg q24h or 300 mg q24h**) are proposed.
+The study suggests that the dosing regimen of **150 mg q24h** elicits an AUC~0-24~ of 17.69 mg·h/L, which is below the anticipated exposure of 28 mg·h/L. Based on these results, dosing regimens (**150 mg q8h, 240 mg q24h or 300 mg q24h**) are proposed. **Table 1** shows summary statistics of AUC~0-24~ for the tested dosing regimens below.
 
 ```{r}
 #| echo: false
@@ -169,6 +171,7 @@ auc_summary %>%
   )
 ```
 
+Below is Figure 1 that shows the IPRED plotted against time for all tested regimens.
 
 ```{r}
 #| echo: false
@@ -199,8 +202,16 @@ ggplot(ipred_summary,
     x = "Time (h)",
     y = "Concentration (IPRED)",
     color = "Regimen") +
-  theme_minimal() 
+  theme_minimal()
+
+ggsave("C_p_plots_regimens.png")
 ```
+
+## VPC using xpose4 toolchain (vpc package)
+
+This section produces a Visual Predictive Check (VPC) for **all dosing regimens** using the *xpose4 toolchain* via the `{vpc}` package (which underpins VPCs in xpose). We treat the **first replicate (first `N_id` subjects)** as the observed dataset and overlay it against prediction intervals computed from **all replicates**.
+
+![VPC plots by dosing regimen](xpose4_vpc_by_regimen.png)
 
 # Conclusion
 
