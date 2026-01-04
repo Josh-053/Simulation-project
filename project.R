@@ -42,3 +42,10 @@ vpc(
 # Save to file
 ggsave("xpose4_vpc_by_regimen.png", width = 10, height = 8, dpi = 300)
 ```
+
+
+A visual predictive check plot was created using the simulated dependent variable (DV) plotted against time (Figure 2).
+
+This section produces a Visual Predictive Check (VPC) for **all dosing regimens** using the *xpose4 toolchain* via the `{vpc}` package (which underpins VPCs in xpose). We treat the **first replicate (first `N_id` subjects)** as the observed dataset and overlay it against prediction intervals computed from **all replicates**.
+
+![VPC plots by dosing regimen](xpose4_vpc_by_regimen.png)
