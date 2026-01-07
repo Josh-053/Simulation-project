@@ -2,13 +2,18 @@
 title: "PopPK-Based Dosing Optimization for Triazoconazole"
 author: "Joshua Ijidakinro, Ali Kazim"
 affiliation: "Faculty of Pharmaceutical Sciences, KU Leuven"
-format: pdf
+format:
+  pdf:
+    papersize: A4
+number-sections: true
+date: today
 bibliography: bibliography.bib
 csl: elsevier-vancouver.csl
 execute:
   echo: true
   warning: false
   message: false
+output: bookdown::pdf_document2
 ---
 
 ## Introduction
@@ -17,11 +22,11 @@ Brontogen fibropathy (BF) is an inherited disorder that leads to changes in lung
 
 ## Objectives
 
-The purpose of the simulation was to evaluate whether the administered dose of 150 mg once a day evoked sufficient exposure with area under the curve from time zero to 24 hours (AUC~0-24~) of 28 mg·h/L for children with Brontogen fibropathy. The goal was also to suggest an optimal dosing regimen based on the simulation results.
+The purpose of the simulation was to evaluate whether the administered dose of 150 mg once a day evoked sufficient exposure with area under the curve from time zero to 24 hours (AUC~0-24~) of 28 mg·h/L for children with BF. The goal was also to suggest an optimal dosing regimen based on the simulation results.
 
 ## Methods
 
-A study of 33 adolescent patients was simulated over 100 replicates, resulting in a total of 3300 simulated patients. The simulation was performed using `mrgsolve` package in `R`. A dosing event was created for the administered regimen of **150 mg q24h**, which was used to simulate the individual predicted plasma concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the **continuous AUC integration** method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **150 mg q8h, 150 mg q12h, 240 mg q24h, 300 mg q24h and 330 mg q24h**. Higher doses were selected based on the assumption of dose proportionality @certaradoseprop. The probability of target attainment (PTA, %) was calculated for all regimens, with the target AUC~0-24~ set at **28 mg·h/L**. The target PTA was set at 90% @sheng2010. The next page shows the simulation model script.
+A study of 48 pediatric patients was simulated over 100 replicates, resulting in a total of 4800 simulated patients. The simulation was performed using `mrgsolve` package in `R`. A dosing event was created for the administered regimen of **150 mg q24h**, which was used to simulate the individual predicted plasma concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the **continuous AUC integration** method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **150 mg q8h, 150 mg q12h, 240 mg q24h, 300 mg q24h and 340 mg q24h**. Higher doses were selected based on the assumption of dose proportionality @certaradoseprop. The probability of target attainment (PTA, %) was calculated for all regimens, with the target AUC~0-24~ set at **28 mg·h/L**. The target PTA was set at 95% @sheng2010. The next page shows the simulation model script.
 
 
 ```{r packages}
@@ -34,12 +39,15 @@ if (!require("pacman")) {
 pacman::p_load(mrgsolve,
                ggplot2,
                kableExtra,
-               tidyverse)
+               tidyverse,
+               bookdown)
 ```
 
-{{< pagebreak >}} 
+{{< pagebreak >}}
 
-## Simulation Code
+## Simulation Code {#id}
+
+The model used for the simulation is shown in the script below. It is a one-compartment model with oral absorption and linear elimination. The pharmacokinetic parameters absorption rate constant (`ka`), clearance (`CL`) and volume of distribution (`V`) are correlated with the body weight (`BW`) using power function.
 
 ```{cpp}
 #| eval: false
@@ -57,15 +65,13 @@ double BWEffCL = 0.75    ; // BW effect on CL
 double BWEffV  = 1       ; // BW effect on V
 double BWEffka = -(0.25) ; // BW effect on ka
 
-double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1));
-double V   = TVV  * pow((BW/70),BWEffV)               ;
-double ka  = TVka * pow((BW/70),BWEffka)              ;
-// power function for scaling
+double CL  = TVCL * pow((BW/70),BWEffCL) * exp(ETA(1)) ;
+double V   = TVV  * pow((BW/70),BWEffV)                ;
+double ka  = TVka * pow((BW/70),BWEffka)               ;
 
 double k10 = CL/V ; 
 
-$OMEGA
-0.1415863641 // CV_CL = 39%
+$OMEGA 0.1415863641 // CV_CL = 39%
 
 $SIGMA
 0.0974896213 // EPS(1)
@@ -77,12 +83,11 @@ dxdt_CENT    =  (ka) * DEPOT  - (k10) * CENT ;
 dxdt_cAUC    =                  CENT/V       ;
 
 $TABLE 
-double IPRED  = CENT/V                        ; 
-double DV     = IPRED * (1+EPS(1)) + EPS(2)   ; // populatiion prediction PRED
-double BWsim  = BW                            ;
+double IPRED  = CENT/V                       ; 
+double DV     = IPRED * (1+EPS(1)) + EPS(2)  ;
+double BWsim  = BW                           ;
 
-$CAPTURE
-IPRED DV
+$CAPTURE IPRED DV
 ```
 
 ## Results
@@ -90,44 +95,36 @@ IPRED DV
 ```{r}
 #| include: false
 mod <- mread("project")
-```
 
-```{r parameters}
-#| include: false
 set.seed(123)      # reproducibility
-
 N      <- 100L     # number of replicates
-N_id   <- 33L      # number of patients per replicate
+N_id   <- 48L      # number of patients per replicate
 delta  <- 0.1      # hours (h)
 tot_id <- N * N_id
 ```
 
 ```{r}
 #| include: false
-ev1 <- ev(amt = 150, time = 0)
-ev2 <- ev(amt = 150, time = 0, ii = 12, addl = 1)
-ev3 <- ev(amt = 150, time = 0, ii = 8,  addl = 2)
-ev4 <- ev(amt = 240, time = 0)
-ev5 <- ev(amt = 300, time = 0)
-ev6 <- ev(amt = 330, time = 0)
+# given in supplementary data: median and range of BW (kg)
+BWmin = 24
+BWmedian = 38
+BWmax = 75
 
-# Force a grid that includes 24 exactly
-tg <- tgrid(start = 0, end = 24, delta = delta)
+# dose normalized by body weight
+dose1 = 150 / BWmedian
+dose2 = dose1 / 17.61 * 28 # dose proportionality, determined for BWmedian
 
-
-run_regimen <- function(ev_obj, label) {
-  out <- mrgsim(mod %>% init(cAUC = 0),
-                e      = ev_obj,
+run_regimen <- function(dose, body_weight, interval, addl_dose, label) {
+  out <- mrgsim(mod %>% init(cAUC = 0) %>% param(BW = body_weight),
+                e      = ev(amt = dose * body_weight, time = 0,
+                            ii = interval, addl = addl_dose),
                 nid    = tot_id,
-                tgrid  = tg,
+                tgrid  = tgrid(start = 0, end = 24, delta = delta),
                 output = "df")
   
   rows24  <- out$time == 24
   auc_vec <- out$cAUC[rows24]
- 
-  # Robustness check: should have one AUC per ID
-  stopifnot(length(auc_vec) == tot_id)
-  
+
   list(sim = transform(out, regimen = label),
        auc = data.frame(regimen = label, AUC_0_24 = auc_vec))
 }
@@ -135,25 +132,23 @@ run_regimen <- function(ev_obj, label) {
 
 ```{r}
 #| include: false
-res_24_150 <- run_regimen(ev1, "150 mg q24h")
-res_12_150 <- run_regimen(ev2, "150 mg q12h")
-res_08_150 <- run_regimen(ev3, "150 mg q8h")
-res_24_240 <- run_regimen(ev4, "240 mg q24h")
-res_24_300 <- run_regimen(ev5, "300 mg q24h")
-res_24_330 <- run_regimen(ev6, "330 mg q24h")
+res1 <- run_regimen(dose1, BWmedian, 24, 0, "3.95 mg/kg q24h")
+res2 <- run_regimen(dose1, BWmedian, 12, 1, "3.95 mg/kg q12h")
+res3 <- run_regimen(dose1, BWmedian,  8, 2, "3.95 mg/kg q8h")
+res4 <- run_regimen(dose2, BWmedian, 24, 0, "6.32 mg/kg q24h")
+res5 <- run_regimen(8,     BWmedian, 24, 0, "8.00 mg/kg q24h")
+res6 <- run_regimen(9.50,  BWmedian, 24, 0, "9.50 mg/kg q24h")
 
-sim_all <- bind_rows(res_24_150$sim, res_12_150$sim, res_08_150$sim,
-                     res_24_240$sim, res_24_300$sim, res_24_330$sim)
-auc_all <- bind_rows(res_24_150$auc, res_12_150$auc, res_08_150$auc,
-                     res_24_240$auc, res_24_300$auc, res_24_330$auc)
+auc_all <- bind_rows(res1$auc, res2$auc, res3$auc,
+                     res4$auc, res5$auc, res6$auc)
 ```
 
-The table below (@tbl-AUC) demonstrates the tested dosing regimens, along with their summary statistics for AUC~0-24~, as well as the probability of target attainment (PTA, %). The target AUC~0-24~ was **28 mg·h/L**. The dosing regimen of interest (**150 mg q24h**) elicits an AUC~0-24~ of `r signif(median(auc_all$AUC_0_24[auc_all$regimen=="150 mg q24h"], digits = 4))` mg·h/L, which corresponds to a PTA of zero percent. Regimens **150 mg q12h and 240 mg q24h** have a PTA below 90%, whereas regimens **150 mg q8h, 300 mg q24h and 330 mg q24h** have a PTA of at least 90%.
+The table below (@tbl-AUC1) demonstrates the tested dosing regimens for a pediatric patient with median body weight of **38 kg**, along with their summary statistics for AUC~0-24~. The probability of target attainment (PTA, %) has also been included in the table, with a target AUC~0-24~ of **28 mg·h/L**. The dosing regimen of interest (150 mg q24h, corresponding to **3.95 mg/kg q24h**) elicits an AUC~0-24~ of `r signif(median(auc_all$AUC_0_24[auc_all$regimen=="3.95 mg/kg q24h"], digits = 4))` mg·h/L, which corresponds to a PTA of zero percent. Only regimen **9.50 mg/kg q24h** has a PTA of at least 95%.
 
 ```{r}
 #| echo: false
-#| label: tbl-AUC
-#| tbl-cap: "AUC (0–24 h, in mg·h/L) Summary by Regimen"
+#| label: tbl-AUC1
+#| tbl-cap: "AUC (0–24 h, in mg·h/L) Summary by Regimen for Median BW of 38 kg."
 auc_summary <- auc_all %>%
   group_by(regimen) %>%
   summarize(median_AUC_0_24 = median(AUC_0_24),
@@ -173,136 +168,32 @@ auc_summary %>%
   )
 ```
 
-Below is @fig-regimens that shows the IPRED plotted against time for all tested regimens.
-
-![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED](C_p_plots_regimens.png){#fig-regimens}
+Given that the body weight in this study was added as a covariate for PK parameters (see previous page), it was important to assess the dosing regimen across studied body weight range. @tbl-AUC2 shows summary statistics of AUC~0-24h~ of dosing regimen **9.50 mg/kg q24h** for the minimum, median and maximum body weight.
 
 ```{r}
-#| include: false
-ipred_summary<- sim_all %>%
-  group_by(regimen, time) %>%
-  summarize(IPRED_median = median(IPRED),
-            IPRED_lo     = quantile(IPRED, 0.05),
-            IPRED_hi     = quantile(IPRED, 0.95),
-            .groups = "drop")
+#| echo: false
+#| label: tbl-AUC2
+#| tbl-cap: "AUC (0–24 h, in mg·h/L) Summary by BW for 9.50 mg/kg q24h."
+res6 <- res6 %>%
+  map(~ .x %>% mutate(regimen = recode(regimen, "9.50 mg/kg q24h" = "38 (median)")))
+res7 <- run_regimen(9.50, BWmin, 24, 0, "24 (min)")
+res8 <- run_regimen(9.50, BWmax, 24, 0, "75 (max)")
 
-ggplot(ipred_summary,
-       aes(x = time,
-           color = regimen)) +
-  geom_ribbon(aes(ymin = IPRED_lo,
-                  ymax = IPRED_hi,
-                  fill = regimen),
-              alpha = 0.15,
-              color = NA)+
-  geom_line(aes(y = IPRED_median),
-            linewidth = 1) +
-  scale_color_manual(values = c("red", "darkorange", "gold",
-                                "forestgreen", "blue", "purple")) +
-  scale_fill_manual(values =  c("red", "darkorange", "gold",
-                                "forestgreen", "blue", "purple")) +
-  guides(fill="none") +
-  labs(x = "Time (h)",
-    y = "Concentration (IPRED)",
-    color = "Regimen") +
-  theme_minimal()
+sim_BW <- bind_rows(res6$sim, res7$sim, res8$sim)
+auc_BW <- bind_rows(res6$auc, res7$auc, res8$auc)
 
-ggsave("C_p_plots_regimens.png", width = 6.8, height = 3.7, dpi = 300, units = "in")
-```
+auc_BW <- auc_BW %>% 
+  mutate(dose_BW = case_when(
+    regimen == "38 (median)" ~ 38,
+    regimen == "24 (min)" ~ 24,
+    regimen == "75 (max)" ~ 75))
 
-## Discussion
+auc_BW$dose_BW = auc_BW$dose_BW * 9.50
 
-In this study, a model was used for the simulation of regimens for dose optimizations of triazoconazole in children with Brontogen fibropathy (BF). As seen in @tbl-AUC, the PTA was zero percent for dosing regimen of **150 mg q24h**. This means that none of the virtual patients evoked sufficient exposure. Increasing the dose led to an increase in exposure, while the same effect was achieved from reducing the inter-dose interval. However, administering the dose more frequently might lead to reduced patient compliance. Therefore, regimens **300 or 330 mg q24h** were regarded as suitable dosing regimens.
-
-There were limitations in the study: due to limited data on response and toxicity profile, the safety of the dosing regimens of triazoconazole could not be assessed. Furthermore, no exposure-response relationship could be established. Once sufficient response and toxicity data are available, the safety of the proposed dosing regimens will be evaluated, and exposure-response analysis will be carried out.
-
-## Conclusion
-
-The study suggests that the dosing regimen of **150 mg q24h** proposed by Dr. Tagore, elicits an insufficient exposure. Dosing regimens of **300 and 330 mg q24h** are proposed and expected to achieve the target exposure and elicit optimal response against *S. viridicaulis* in children with Brontogen fibropathy.
-
-## Acknowledgement
-
-We would like to thank Dr. Sarojini Tagore, Pediatrician at Gavabhata Hospital and Research Centre, Amumbi, South Asia, for initiating this collaboration and sharing valuable clinical insights on Brontogen fibropathy and triazoconazole therapy. Our appreciation also goes to Dr. Lydia Majorana from Sicilia for her expert guidance on BF management and to Dr. Ramesh Thapali of Metrum Research Group for his contribution to the development of the PopPK model.
-
-We would like to express our gratitude to Emmanuel Niyigena and his creative mind for coming up with this research.
-
-## References
-
-::: {#refs}
-:::
-
-{{< pagebreak >}}
-
-## Appendix: R Scripts
-
-```{r}
-#| eval: false
-if (!require("pacman")) {
-  install.packages("pacman")
-  library(pacman)}
-
-pacman::p_load(mrgsolve, ggplot2, kableExtra, tidyverse)
-```
-
-```{r}
-#| eval: false
-mod <- mread("project")
-
-set.seed(123)      # reproducibility
-N      <- 100L     # number of replicates
-N_id   <- 33L      # number of patients per replicate
-delta  <- 0.1      # hours (h)
-tot_id <- N * N_id
-```
-
-```{r}
-#| eval: false
-ev1 <- ev(amt = 150, time = 0)
-ev2 <- ev(amt = 150, time = 0, ii = 12, addl = 1)
-ev3 <- ev(amt = 150, time = 0, ii = 8,  addl = 2)
-ev4 <- ev(amt = 240, time = 0)
-ev5 <- ev(amt = 300, time = 0)
-ev6 <- ev(amt = 330, time = 0)
-
-# Force a grid that includes 24 exactly
-tg <- tgrid(start = 0, end = 24, delta = delta)
-
-run_regimen <- function(ev_obj, label) {
-  out <- mrgsim(mod %>% init(cAUC = 0),
-                e      = ev_obj,
-                nid    = tot_id,
-                tgrid  = tg,
-                output = "df")
-  
-  rows24  <- out$time == 24
-  auc_vec <- out$cAUC[rows24]
- 
-  stopifnot(length(auc_vec) == tot_id) # Robustness check: one AUC per ID!
-  
-  list(sim = transform(out, regimen = label),
-       auc = data.frame(regimen = label, AUC_0_24 = auc_vec))
-}
-```
-
-```{r}
-#| eval: false
-res_24_150 <- run_regimen(ev1, "150 mg q24h")
-res_12_150 <- run_regimen(ev2, "150 mg q12h")
-res_08_150 <- run_regimen(ev3, "150 mg q8h")
-res_24_240 <- run_regimen(ev4, "240 mg q24h")
-res_24_300 <- run_regimen(ev5, "300 mg q24h")
-res_24_330 <- run_regimen(ev6, "330 mg q24h")
-
-sim_all <- bind_rows(res_24_150$sim, res_12_150$sim, res_08_150$sim,
-                     res_24_240$sim, res_24_300$sim, res_24_330$sim)
-auc_all <- bind_rows(res_24_150$auc, res_12_150$auc, res_08_150$auc,
-                     res_24_240$auc, res_24_300$auc, res_24_330$auc)
-```
-
-```{r}
-#| eval: false
-auc_summary <- auc_all %>%
+auc_summary <- auc_BW %>%
   group_by(regimen) %>%
-  summarize(median_AUC_0_24 = median(AUC_0_24),
+  summarize(actual_dose = unique(dose_BW),
+            median_AUC_0_24 = median(AUC_0_24),
             mean_AUC_0_24   = mean(AUC_0_24),
             sd_AUC_0_24     = sd(AUC_0_24),
             PTA             = mean(AUC_0_24 >= 28) * 100,
@@ -312,28 +203,28 @@ auc_summary %>%
   kable(
     format   = "latex", # PDF/LaTeX output
     booktabs = TRUE,    # nicer horizontal rules
-    digits   = 2,       # numeric rounding
-    caption  = "AUC (0–24 h) Summary by Regimen",
-    col.names = c("Regimen", "Median", "Mean", "SD", "PTA (%)"),
-    align    = c("l", "r", "r", "r", "r"),
+    digits   = 4,       # numeric rounding
+    col.names = c("Body Weight (kg)", "Dose (mg)", "Median", "Mean", "SD", "PTA (%)"),
+    align    = c("l", "r", "r", "r", "r", "r"),
     longtable = TRUE
   )
 ```
 
+{{< pagebreak >}} 
+
+Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weight.
+
+![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED](C_p_plots_regimens.png){#fig-regimens}
+
 ```{r}
-#| eval: false
-ipred_summary<- sim_all %>%
+#| include: false
+ipred_summary <- sim_BW %>%
   group_by(regimen, time) %>%
   summarize(IPRED_median = median(IPRED),
             IPRED_lo     = quantile(IPRED, 0.05),
             IPRED_hi     = quantile(IPRED, 0.95),
             .groups = "drop")
-```
 
-{{< pagebreak >}}
-
-```{r}
-#| eval: false
 ggplot(ipred_summary,
        aes(x = time,
            color = regimen)) +
@@ -344,14 +235,189 @@ ggplot(ipred_summary,
               color = NA)+
   geom_line(aes(y = IPRED_median),
             linewidth = 1) +
-  scale_color_manual(values = c("red", "darkorange", "gold",
-                                "forestgreen", "blue", "purple")) +
-  scale_fill_manual(values =  c("red", "darkorange", "gold",
-                                "forestgreen", "blue", "purple")) +
+  scale_color_manual(values = c("red", "forestgreen", "blue")) +
+  scale_fill_manual(values =  c("red", "forestgreen", "blue")) +
   guides(fill="none") +
   labs(x = "Time (h)",
-    y = "Concentration (IPRED)",
-    color = "Regimen") +
+    y = "Individual Predicted Concentration (mg/L)",
+    color = "Body Weight (kg)") +
+  theme_minimal()
+
+ggsave("C_p_plots_regimens.png", width = 6.8, height = 3.7, dpi = 300, units = "in")
+```
+
+## Discussion
+
+In this study, a model was used for the simulation of regimens for dose optimizations of triazoconazole in children with Brontogen fibropathy (BF). As seen in @tbl-AUC1, the PTA was zero percent for dosing regimen of **150 mg q24h**. This means that none of the virtual patients evoked sufficient exposure. Increasing the dose led to an increase in exposure, while the same effect was achieved from reducing the inter-dose interval. However, administering the dose more frequently might lead to reduced patient compliance. Therefore, regimens **340 mg q24h** was regarded as suitable dosing regimens.
+
+There were limitations in the study: due to limited data on response and toxicity profile, the safety of the dosing regimens of triazoconazole could not be assessed. Furthermore, no exposure-response relationship could be established. Once sufficient response and toxicity data are available, the safety of the proposed dosing regimens will be evaluated, and exposure-response analysis will be carried out.
+
+## Conclusion
+
+The study suggests that the dosing regimen of **150 mg q24h** proposed by Dr. Tagore, elicits an insufficient exposure. Dosing regimen of **9.50 mg/kg q24h** is proposed and expected to achieve the target exposure and elicit optimal response against *S. viridicaulis* in children with Brontogen fibropathy.
+
+## Acknowledgement {.unnumbered}
+
+We would like to thank Dr. Sarojini Tagore, Pediatrician at Gavabhata Hospital and Research Centre, Amumbi, South Asia, for initiating this collaboration and sharing valuable clinical insights on Brontogen fibropathy and triazoconazole therapy. Our appreciation also goes to Dr. Lydia Majorana from Sicilia for her expert guidance on BF management and to Dr. Ramesh Thapali of Metrum Research Group for his contribution to the development of the PopPK model.
+
+We would like to express our gratitude to Emmanuel Niyigena and his creative mind for coming up with this research.
+
+## References {.unnumbered}
+
+::: {#refs}
+:::
+
+{{< pagebreak >}}
+
+## Appendix: R Scripts {.unnumbered}
+
+```{r}
+#| eval: false
+
+if (!require("pacman")) {install.packages("pacman")
+  library(pacman)}
+
+pacman::p_load(mrgsolve, ggplot2, kableExtra, tidyverse, bookdown)
+```
+
+```{r}
+#| eval: false
+mod <- mread("project")
+
+set.seed(123)      # reproducibility
+N      <- 100L     # number of replicates
+N_id   <- 48L      # number of patients per replicate
+delta  <- 0.1      # hours (h)
+tot_id <- N * N_id
+```
+
+```{r}
+#| eval: false
+BWmin = 24    # BW (kg) median and range given in supplementary data
+BWmedian = 38
+BWmax = 75
+
+dose1 = 150 / BWmedian     # administered dose normalized by body weight
+dose2 = dose1 / 17.61 * 28 # dose proportionality, determined for BWmedian
+
+run_regimen <- function(dose, body_weight, interval, addl_dose, label) {
+  out <- mrgsim(mod %>% init(cAUC = 0) %>% param(BW = body_weight),
+                e      = ev(amt = dose * body_weight, time = 0,
+                            ii = interval, addl = addl_dose),
+                nid    = tot_id,
+                tgrid  = tgrid(start = 0, end = 24, delta = delta),
+                output = "df")
+  
+  rows24  <- out$time == 24
+  auc_vec <- out$cAUC[rows24]
+
+  list(sim = transform(out, regimen = label),
+       auc = data.frame(regimen = label, AUC_0_24 = auc_vec))}
+```
+
+```{r}
+#| eval: false
+res1 <- run_regimen(dose1, BWmedian, 24, 0, "3.95 mg/kg q24h")
+res2 <- run_regimen(dose1, BWmedian, 12, 1, "3.95 mg/kg q12h")
+res3 <- run_regimen(dose1, BWmedian,  8, 2, "3.95 mg/kg q8h")
+res4 <- run_regimen(dose2, BWmedian, 24, 0, "6.32 mg/kg q24h")
+res5 <- run_regimen(8,     BWmedian, 24, 0, "8.00 mg/kg q24h")
+res6 <- run_regimen(9.50,  BWmedian, 24, 0, "9.50 mg/kg q24h")
+```
+
+{{< pagebreak >}}
+
+```{r}
+#| eval: false
+auc_all <- bind_rows(res1$auc, res2$auc, res3$auc,
+                     res4$auc, res5$auc, res6$auc)
+```
+
+```{r}
+#| eval: false
+##| label: tbl-AUC1
+##| tbl-cap: "AUC (0–24 h, in mg·h/L) Summary by Regimen for Median
+##            BW of 38 kg."
+auc_summary <- auc_all %>%
+  group_by(regimen) %>%
+  summarize(median_AUC_0_24 = median(AUC_0_24),
+            mean_AUC_0_24   = mean(AUC_0_24),
+            sd_AUC_0_24     = sd(AUC_0_24),
+            PTA             = mean(AUC_0_24 >= 28) * 100,
+            .groups = "drop")
+
+auc_summary %>%
+  kable(format   = "latex", # PDF/LaTeX output
+        booktabs = TRUE,    # nicer horizontal rules
+        digits   = 4,       # numeric rounding
+        col.names = c("Regimen", "Median", "Mean", "SD", "PTA (%)"),
+        align    = c("l", "r", "r", "r", "r"),
+        longtable = TRUE)
+```
+
+```{r}
+#| eval: false
+##| label: tbl-AUC2
+##| tbl-cap: "AUC (0–24 h, in mg·h/L) Summary by BW for 9.50 mg/kg q24h."
+res6 <- res6 %>% map(~ .x %>%
+  mutate(regimen = recode(regimen, "9.50 mg/kg q24h" = "38 (median)")))
+
+res7 <- run_regimen(9.50, BWmin, 24, 0, "24 (min)")
+res8 <- run_regimen(9.50, BWmax, 24, 0, "75 (max)")
+
+sim_BW <- bind_rows(res6$sim, res7$sim, res8$sim)
+auc_BW <- bind_rows(res6$auc, res7$auc, res8$auc)
+
+auc_BW <- auc_BW %>% 
+  mutate(dose_BW = case_when(regimen == "38 (median)" ~ 38,
+                             regimen == "24 (min)" ~ 24,
+                             regimen == "75 (max)" ~ 75))
+
+auc_BW$dose_BW = auc_BW$dose_BW * 9.50
+```
+
+{{< pagebreak >}}
+
+```{r}
+#| eval: false
+auc_summary <- auc_BW %>%
+  group_by(regimen) %>%
+  summarize(actual_dose = unique(dose_BW),
+            median_AUC_0_24 = median(AUC_0_24),
+            mean_AUC_0_24   = mean(AUC_0_24),
+            sd_AUC_0_24     = sd(AUC_0_24),
+            PTA             = mean(AUC_0_24 >= 28) * 100,
+            .groups = "drop")
+
+auc_summary %>%
+  kable(format   = "latex", booktabs = TRUE, digits   = 4,
+        col.names = c("Body Weight (kg)", "Dose (mg)", "Median",
+                      "Mean", "SD", "PTA (%)"),
+        align    = c("l", "r", "r", "r", "r", "r"),
+        longtable = TRUE)
+```
+
+```{r}
+#| eval: false
+ipred_summary <- sim_BW %>%
+  group_by(regimen, time) %>%
+  summarize(IPRED_median = median(IPRED),
+            IPRED_lo     = quantile(IPRED, 0.05),
+            IPRED_hi     = quantile(IPRED, 0.95),
+            .groups = "drop")
+```
+```{r}
+#| eval: false
+ggplot(ipred_summary, aes(x = time, color = regimen)) +
+  geom_ribbon(aes(ymin = IPRED_lo, ymax = IPRED_hi, fill = regimen),
+              alpha = 0.15, color = NA)+
+  geom_line(aes(y = IPRED_median), linewidth = 1) +
+  scale_color_manual(values = c("red", "forestgreen", "blue")) +
+  scale_fill_manual(values =  c("red", "forestgreen", "blue")) +
+  guides(fill="none") +
+  labs(x = "Time (h)",
+       y = "Individual Predicted Concentration (mg/L)",
+       color = "Body Weight (kg)") +
   theme_minimal()
 
 ggsave("C_p_plots_regimens.png", width = 6.8, height = 3.7,
