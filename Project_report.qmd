@@ -160,7 +160,7 @@ auc_summary %>%
   )
 ```
 
-Given that the body weight in this study was added as a covariate for PK parameters (see previous page), it was important to assess the dosing regimen across studied body weight range. @tbl-AUC2 shows summary statistics of AUC~0-24h~ of dosing regimen **9.50 mg/kg q24h** for the minimum, median and maximum body weight.
+Given that the body weight in this study was added as a covariate for PK parameters (see previous page), it was important to assess the dosing regimen across studied BW range. @tbl-AUC2 shows summary statistics of AUC~0-24h~ of dosing regimen **9.50 mg/kg q24h** for the minimum, median and maximum BW.
 
 ```{r}
 #| echo: false
@@ -202,9 +202,11 @@ auc_summary %>%
   )
 ```
 
+Multiplying the normalized dose 9.50 mg/kg by BW gives different quantities for different BW values, as shown in the table above. However, their AUC~0-24~ and PTA are comparable, which can be explained by the positive relationship between BW and volume of distribution (`V`) as demonstrated in the model code. This means that a patient with larger BW has a larger V, therefore lower plasma concentration. In other words, raising the dose compensates for the reduction in exposure driven by the increase in V, that in turn is increased by BW.
+
 {{< pagebreak >}} 
 
-Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weights. The figure shows that patients with higher body weight clear the drug faster, as seen from the decreasing slope.
+Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weights. As explained in the previous page, the increase in dose balances out the increase of V so that the AUC~0-24~ remains comparable across the studied BW range. The figure also shows that patients with higher body weight clear the drug slower, as seen from the decreasing slope.
 
 ![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED](C_p_plots_regimens.png){#fig-regimens}
 
