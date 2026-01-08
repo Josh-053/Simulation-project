@@ -208,7 +208,7 @@ Multiplying the normalized dose 9.50 mg/kg by BW gives different quantities for 
 
 Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weights. As explained in the previous page, the increase in dose balances out the increase of V so that the AUC~0-24~ remains comparable across the studied BW range. The figure also shows that patients with higher body weight clear the drug slower, as seen from the decreasing slope.
 
-![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED](C_p_plots_regimens.png){#fig-regimens}
+![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED.](C_p_plots_regimens.png){#fig-regimens}
 
 ```{r}
 #| include: false
