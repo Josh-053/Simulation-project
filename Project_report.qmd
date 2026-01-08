@@ -25,9 +25,21 @@ Brontogen fibropathy (BF) is an inherited disorder that leads to changes in lung
 The purpose of the simulation was to evaluate whether the administered dose of 150 mg once a day evoked sufficient exposure with area under the curve from time zero to 24 hours (AUC~0-24~) of 28 mg·h/L for children with BF. The goal was also to suggest an optimal dosing regimen based on the simulation results.
 
 ## Methods
+```{r}
+#| include: false
+# given in supplementary data: median and range of BW (kg)
+BWmin = 24
+BWmedian = 38
+BWmax = 75
 
-A study of 48 pediatric patients was simulated over 100 replicates, resulting in a total of 4800 simulated patients. The simulation was performed using `mrgsolve` package in `R`. A dosing event was created for the administered regimen of **150 mg q24h**, which was used to simulate the individual predicted plasma concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the **continuous AUC integration** method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **150 mg q8h, 150 mg q12h, 240 mg q24h, 300 mg q24h and 340 mg q24h**. Higher doses were selected based on the assumption of dose proportionality @certaradoseprop. The probability of target attainment (PTA, %) was calculated for all regimens, with the target AUC~0-24~ set at **28 mg·h/L**. The target PTA was set at 95% @sheng2010. The next page shows the simulation model script.
+# dose normalized by body weight
+dose1 = 150 / BWmedian
+dose2 = dose1 / 17.61 * 28 # dose proportionality, determined for BWmedian
+```
 
+A study of 48 pediatric patients was simulated over 100 replicates, resulting in a total of 4800 simulated patients. The patients had a body weight ranging between **`r BWmin` and `r BWmax` kg**, with a median of **`r BWmedian` kg**. The simulation was performed via `mrgsolve` package in `R`, using the population pharmacokinetic (popPK) model shown in the next page. It is a one-compartment model with oral absorption and linear elimination. The pharmacokinetic parameters absorption rate constant (`ka`), clearance (`CL`) and volume of distribution (`V`) are correlated with the body weight (`BW`) using power function.
+
+A dosing event was created for the administered regimen of 150 mg q24h. This dose was corrected for median body weight, resulting in a regimen of **3.85 mg/kg q24h**. This regimen was used to simulate the individual predicted plasma concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the continuous AUC integration method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **3.85 mg/kg q8h, 3.85 mg/kg q12h, 6.32 mg/kg q24h, 8.00 mg/kg q24h and 9.50 mg/kg q24h**. Higher doses were selected based on the assumption of dose proportionality @schmith. The probability of target attainment (PTA, %) was calculated for all regimens across the body weight range, with the target AUC~0-24~ set at **28 mg·h/L**. The target PTA was set at 95%. 
 
 ```{r packages}
 #| include: false
@@ -36,28 +48,19 @@ if (!require("pacman")) {
   install.packages("pacman")
   library(pacman)}
 
-pacman::p_load(mrgsolve,
-               ggplot2,
-               kableExtra,
-               tidyverse,
-               bookdown)
+pacman::p_load(mrgsolve, ggplot2, kableExtra, tidyverse, bookdown)
 ```
-
-{{< pagebreak >}}
-
-## Simulation Code {#id}
-
-The model used for the simulation is shown in the script below. It is a one-compartment model with oral absorption and linear elimination. The pharmacokinetic parameters absorption rate constant (`ka`), clearance (`CL`) and volume of distribution (`V`) are correlated with the body weight (`BW`) using power function.
 
 ```{cpp}
 #| eval: false
+// Simulation Code
+
 $PARAM
 TVCL   = 7.95,  // L/h
 TVV    = 190,   // L 
 TVka   = 0.17,  // 1/h
 
-$CMT DEPOT CENT cAUC // 1-compartmental model with absorption
-
+$CMT   DEPOT CENT cAUC // 1-compartmental model with absorption
 $INPUT BW = 38 // kg, covariate which has effect on PK parameters
 
 $MAIN
@@ -73,19 +76,17 @@ double k10 = CL/V ;
 
 $OMEGA 0.1415863641 // CV_CL = 39%
 
-$SIGMA
-0.0974896213 // EPS(1)
-0.0324       // EPS(2)
+$SIGMA 0.0974896213 // EPS(1)
+       0.0324       // EPS(2)
 
-$ODE
-dxdt_DEPOT   = -(ka) * DEPOT                 ;
-dxdt_CENT    =  (ka) * DEPOT  - (k10) * CENT ;
-dxdt_cAUC    =                  CENT/V       ;
+$ODE   dxdt_DEPOT = -(ka) * DEPOT                 ;
+       dxdt_CENT  =  (ka) * DEPOT  - (k10) * CENT ;
+       dxdt_cAUC  =                  CENT/V       ;
 
 $TABLE 
-double IPRED  = CENT/V                       ; 
-double DV     = IPRED * (1+EPS(1)) + EPS(2)  ;
-double BWsim  = BW                           ;
+double IPRED      = CENT/V                       ; 
+double DV         = IPRED * (1+EPS(1)) + EPS(2)  ;
+double BWsim      = BW                           ;
 
 $CAPTURE IPRED DV
 ```
@@ -105,15 +106,6 @@ tot_id <- N * N_id
 
 ```{r}
 #| include: false
-# given in supplementary data: median and range of BW (kg)
-BWmin = 24
-BWmedian = 38
-BWmax = 75
-
-# dose normalized by body weight
-dose1 = 150 / BWmedian
-dose2 = dose1 / 17.61 * 28 # dose proportionality, determined for BWmedian
-
 run_regimen <- function(dose, body_weight, interval, addl_dose, label) {
   out <- mrgsim(mod %>% init(cAUC = 0) %>% param(BW = body_weight),
                 e      = ev(amt = dose * body_weight, time = 0,
@@ -248,7 +240,7 @@ ggsave("C_p_plots_regimens.png", width = 6.8, height = 3.7, dpi = 300, units = "
 
 ## Discussion
 
-In this study, a model was used for the simulation of regimens for dose optimizations of triazoconazole in children with Brontogen fibropathy (BF). As seen in @tbl-AUC1, the PTA was zero percent for dosing regimen of **150 mg q24h**. This means that none of the virtual patients evoked sufficient exposure. Increasing the dose led to an increase in exposure, while the same effect was achieved from reducing the inter-dose interval. However, administering the dose more frequently might lead to reduced patient compliance. Therefore, regimens **340 mg q24h** was regarded as suitable dosing regimens.
+In this study, a popPK model was used for the simulation of regimens for dose optimizations of triazoconazole in children with Brontogen fibropathy (BF). As seen in @tbl-AUC1, the PTA was zero percent for dosing regimen of **150 mg q24h**. This means that none of the virtual patients evoked sufficient exposure. Increasing the dose led to an increase in exposure, while the same effect was achieved from reducing the inter-dose interval. However, administering the dose more frequently might lead to reduced patient compliance. Therefore, regimens **9.50 mg/kg q24h** was regarded as suitable dosing regimens.
 
 There were limitations in the study: due to limited data on response and toxicity profile, the safety of the dosing regimens of triazoconazole could not be assessed. Furthermore, no exposure-response relationship could be established. Once sufficient response and toxicity data are available, the safety of the proposed dosing regimens will be evaluated, and exposure-response analysis will be carried out.
 
