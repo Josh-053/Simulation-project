@@ -6,7 +6,7 @@ format:
   pdf:
     papersize: A4
 number-sections: true
-date: today
+date: 2026-01-05
 bibliography: bibliography.bib
 csl: elsevier-vancouver.csl
 execute:
@@ -37,7 +37,7 @@ dose1 = 150 / BWmedian
 dose2 = dose1 / 17.61 * 28 # dose proportionality, determined for BWmedian
 ```
 
-A study of 48 pediatric patients was simulated over 100 replicates, resulting in a total of 4800 simulated patients. The patients had a body weight ranging between **`r BWmin` and `r BWmax` kg**, with a median of **`r BWmedian` kg**. The simulation was performed via `mrgsolve` package in `R`, using the population pharmacokinetic (popPK) model shown in the next page. It is a one-compartment model with oral absorption and linear elimination. The pharmacokinetic parameters absorption rate constant (`ka`), clearance (`CL`) and volume of distribution (`V`) are correlated with the body weight (`BW`) using power function.
+A study of 48 pediatric patients was simulated over 100 replicates, resulting in a total of 4800 simulated patients. The patients had a body weight ranging between **`r BWmin` and `r BWmax` kg**, with a median of **`r BWmedian` kg**. The simulation was performed via `mrgsolve` package in `R`, using the population pharmacokinetic (popPK) model shown in the next page. It is a one-compartment model with oral absorption and linear elimination. The pharmacokinetic parameters, absorption rate constant (`ka`), clearance (`CL`) and volume of distribution (`V`) are correlated with the body weight (`BW`) using power function.
 
 A dosing event was created for the administered regimen of 150 mg q24h. This dose was corrected for median body weight, resulting in a regimen of **3.85 mg/kg q24h**. This regimen was used to simulate the individual predicted plasma concentration-time profile (IPRED) and the cumulative area under the curve (cAUC). AUC~0-24~ was calculated using the continuous AUC integration method of adding cAUC from 0 to 24 hours. Five empirical dosing regimens were simulated in the same manner as the administered regimen, these were as follows: **3.85 mg/kg q8h, 3.85 mg/kg q12h, 6.32 mg/kg q24h, 8.00 mg/kg q24h and 9.50 mg/kg q24h**. Higher doses were selected based on the assumption of dose proportionality @schmith. The probability of target attainment (PTA, %) was calculated for all regimens across the body weight range, with the target AUC~0-24~ set at **28 mg·h/L**. The target PTA was set at 95%. 
 
@@ -202,11 +202,11 @@ auc_summary %>%
   )
 ```
 
-Multiplying the normalized dose 9.50 mg/kg by BW gives different quantities for different BW values, as shown in the table above. However, their AUC~0-24~ and PTA are comparable, which can be explained by the positive relationship between BW and volume of distribution (`V`) as demonstrated in the model code. This means that a patient with larger BW has a larger V, therefore lower plasma concentration. In other words, raising the dose compensates for the reduction in exposure driven by the increase in V, that in turn is increased by BW.
+Multiplying the normalized dose, 9.50 mg/kg, by BW gives different amounts for different BW values, as shown in the table above. The results in the table above show that 9.50 mg/kg elicit optimal exposure across the studied BW range. This can be explained by the positive relationship between BW and volume of distribution (`V`) as demonstrated in the model code. This means that a patient with larger BW has a larger V, and therefore lower plasma concentration. In other words, raising the dose compensates for the reduction in exposure driven by the increase in V.
 
 {{< pagebreak >}} 
 
-Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weights. As explained in the previous page, the increase in dose balances out the increase of V so that the AUC~0-24~ remains comparable across the studied BW range. The figure also shows that patients with higher body weight clear the drug slower, as seen from the decreasing slope.
+Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weights. As explained in the previous page, the increase in dose balances out the increase of V so that the exposure remains optimal for all studied patients. The figure also shows that patients with higher body weight clear the drug slower, as seen from the decreasing slope.
 
 ![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED.](C_p_plots_regimens.png){#fig-regimens}
 
@@ -243,21 +243,21 @@ ggsave("C_p_plots_regimens.png", width = 4.5, height = 3.7, dpi = 300, units = "
 
 ## Discussion
 
-In this study, a popPK model was used for the simulation of regimens for dose optimizations of triazoconazole in children with Brontogen fibropathy (BF). As seen in @tbl-AUC1, the PTA was zero percent for dosing regimen of **150 mg q24h**. This means that none of the virtual patients evoked sufficient exposure. Increasing the dose led to an increase in exposure, while the same effect was achieved from reducing the inter-dose interval. However, administering the dose more frequently might lead to reduced patient compliance. Therefore, regimens **9.50 mg/kg q24h** was regarded as suitable dosing regimens.
+In this study, a popPK model was used for the simulation of regimens for dose optimizations of triazoconazole in children with Brontogen fibropathy (BF). As seen in @tbl-AUC1, the PTA was zero percent for dosing regimen of **150 mg q24h**. This indicates that the dose does not evoke sufficient exposure in the patients. Based on the PTA, the regimen of **9.50 mg/kg q24h** was regarded as suitable for the studied patients.
 
-There were limitations in the study: due to limited data on response and toxicity profile, the safety of the dosing regimens of triazoconazole could not be assessed. Furthermore, no exposure-response relationship could be established. Once sufficient response and toxicity data are available, the safety of the proposed dosing regimens will be evaluated, and exposure-response analysis will be carried out.
+There were limitations in the study: due to limited data on response and toxicity profile, the safety of the dosing regimen of triazoconazole could not be assessed. Furthermore, no exposure-response relationship could be established. Once sufficient response and toxicity data are available, the safety of the proposed dosing regimen will be evaluated, and exposure-response analysis will be carried out.
 
 ## Conclusion
 
-The study suggests that the dosing regimen of **150 mg q24h** proposed by Dr. Tagore, elicits an insufficient exposure. Dosing regimen of **9.50 mg/kg q24h** is proposed and expected to achieve the target exposure and elicit optimal response against *S. viridicaulis* in children with Brontogen fibropathy.
+The study suggests that the initial dosing regimen of **150 mg q24h**, elicits insufficient exposure. Dosing regimen of **9.50 mg/kg q24h** is proposed and expected to achieve the target exposure and elicit optimal response against *S. viridicaulis* in children with Brontogen fibropathy.
 
 ## Acknowledgement {.unnumbered}
 
 We would like to thank Dr. Sarojini Tagore, Pediatrician at Gavabhata Hospital and Research Centre, Amumbi, South Asia, for initiating this collaboration and sharing valuable clinical insights on Brontogen fibropathy and triazoconazole therapy. Our appreciation also goes to Dr. Lydia Majorana from Sicilia for her expert guidance on BF management and to Dr. Ramesh Thapali of Metrum Research Group for his contribution to the development of the PopPK model.
 
-We would like to express our gratitude to Emmanuel Niyigena and his creative mind for coming up with this research.
+We would also like to express our gratitude to Emmanuel Niyigena for his assistance and creative mind for coming up with this research.
 
-## References {.unnumbered}
+## Reference {.unnumbered}
 
 ::: {#refs}
 :::
