@@ -135,7 +135,7 @@ auc_all <- bind_rows(res1$auc, res2$auc, res3$auc,
                      res4$auc, res5$auc, res6$auc)
 ```
 
-The table below (@tbl-AUC1) demonstrates the tested dosing regimens for a pediatric patient with median body weight of **38 kg**, along with their summary statistics for AUC~0-24~. The probability of target attainment (PTA, %) has also been included in the table, with a target AUC~0-24~ of **28 mg·h/L**. The dosing regimen of interest (150 mg q24h, corresponding to **3.95 mg/kg q24h**) elicits an AUC~0-24~ of `r signif(median(auc_all$AUC_0_24[auc_all$regimen=="3.95 mg/kg q24h"], digits = 4))` mg·h/L, which corresponds to a PTA of zero percent. Only regimen **9.50 mg/kg q24h** has a PTA of at least 95%.
+The table below (@tbl-AUC1) demonstrates the tested dosing regimens for a pediatric patient with median body weight of **38 kg**, along with their summary statistics for AUC~0-24~. The probability of target attainment (PTA, %) is also included in the table, with a target AUC~0-24~ of **28 mg·h/L**. The dosing regimen of interest (150 mg q24h, corresponding to **3.95 mg/kg q24h**) elicits an AUC~0-24~ of `r signif(median(auc_all$AUC_0_24[auc_all$regimen=="3.95 mg/kg q24h"], digits = 4))` mg·h/L, which corresponds to a PTA of zero percent. Only regimen **9.50 mg/kg q24h** has a PTA of at least 95%.
 
 ```{r}
 #| echo: false
@@ -154,7 +154,7 @@ auc_summary %>%
     format   = "latex", # PDF/LaTeX output
     booktabs = TRUE,    # nicer horizontal rules
     digits   = 4,       # numeric rounding
-    col.names = c("Regimen", "Median", "Mean", "SD", "PTA (%)"),
+    col.names = c("Regimen", "Median AUC", "Mean AUC", "SD", "PTA (%)"),
     align    = c("l", "r", "r", "r", "r"),
     longtable = TRUE
   )
@@ -196,7 +196,7 @@ auc_summary %>%
     format   = "latex", # PDF/LaTeX output
     booktabs = TRUE,    # nicer horizontal rules
     digits   = 4,       # numeric rounding
-    col.names = c("Body Weight (kg)", "Dose (mg)", "Median", "Mean", "SD", "PTA (%)"),
+    col.names = c("Body Weight (kg)", "Dose (mg)", "Median AUC", "Mean AUC", "SD", "PTA (%)"),
     align    = c("l", "r", "r", "r", "r", "r"),
     longtable = TRUE
   )
