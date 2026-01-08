@@ -204,7 +204,7 @@ auc_summary %>%
 
 {{< pagebreak >}} 
 
-Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weight.
+Below is @fig-regimens that shows the IPRED plotted against time for regimen of 9.50 mg/kg for minimum, median and maximum body weights. The figure shows that patients with higher body weight clear the drug faster, as seen from the decreasing slope.
 
 ![Comparison of concentration-time profiles for tested dosing regimens, using the median (line), 5th and 95th percentile (shaded ribbon) of IPRED](C_p_plots_regimens.png){#fig-regimens}
 
@@ -231,11 +231,12 @@ ggplot(ipred_summary,
   scale_fill_manual(values =  c("red", "forestgreen", "blue")) +
   guides(fill="none") +
   labs(x = "Time (h)",
-    y = "Individual Predicted Concentration (mg/L)",
+    y = "IPRED (mg/L)",
     color = "Body Weight (kg)") +
-  theme_minimal()
+  theme_minimal() + 
+  theme(legend.position = "bottom")
 
-ggsave("C_p_plots_regimens.png", width = 6.8, height = 3.7, dpi = 300, units = "in")
+ggsave("C_p_plots_regimens.png", width = 4.5, height = 3.7, dpi = 300, units = "in")
 ```
 
 ## Discussion
